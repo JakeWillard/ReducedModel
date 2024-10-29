@@ -59,7 +59,7 @@ function backtrace(zeta, pre::Precomputables)
 end
 
 
-function electromagnetic_acceleration(zeta, psi, pre::Precomputables)
+function electromagnetic_acceleration(t, zeta, psi, pre::Precomputables)
 
     # compute derivatives of psi
     psi_y = pre.Dy * psi[:,3]
@@ -70,35 +70,30 @@ function electromagnetic_acceleration(zeta, psi, pre::Precomputables)
     psi_yy = pre.Dyy * psi[:,3]
     psi_tt = (psi[:,3] + psi[:,1] - 2*psi[:,2]) / pre.T_SPACING^2
 
-    return psi_y .* (psi_tt - psi_xx - psi_yy) ./ (cosh.(zeta).^2)
+    # y component of gradient of psi
+    grad_psi_y = [pre.ST.METRIC_INVERSE([t, 0.0, y, 0.0]) * [psi_t, psi_y] for y in pre.Y_POINTS]
+
+    return grad_psi_y .* (psi_tt - psi_xx - psi_yy) ./ (cosh.(zeta).^2)
 end
 
 
-function gravitational_acceleration(t, zeta, GAMMA, pre::Precomputables)
+function gravitational_acceleration(t, zeta, pre::Precomputables)
 
     u = hcat(cosh.(zeta), sinh.(zeta))
-    a = [transpose(u[i,:]) * GAMMA(t,pre.Y_POINTS[i]) * u[i,:] / u[i,1]^2 for i=1:pre.Y_NUMBER]
+    a = [transpose(u[i,:]) * pre.ST.GAMMA([t, 0.0, pre.Y_POINTS[i], 0.0]) * u[i,:] / u[i,1]^2 for i=1:pre.Y_NUMBER]
 
     return a
 end
 
 
 
-function compute_w1(zeta, psi, pre::Precomputables)
+function compute_w1(t, zeta, psi, pre::Precomputables)
 
-    # compute derivatives of psi
-    psi_y = pre.Dy * psi[:,3]
-    psi_t = (psi[:,3] - psi[:,2]) / pre.T_SPACING
-    grad_psi_sqrd = psi_y.^2 - psi_t.^2
-    grad_psi = sqrt.(abs.(grad_psi_sqrd)) .* sign.(grad_psi_sqrd)
-    psi_xx = -2*pre.ASPECT_RATIO^2 / pre.Y_POINTS[end] .* psi_y
-    psi_yy = pre.Dyy * psi[:,3]
-    psi_tt = (psi[:,3] + psi[:,1] - 2*psi[:,2]) / pre.T_SPACING^2
-
-    # TODO: correct this to apply f^y / cosh^2(zeta), not the magnitude of f. 
+    a_em = electromagnetic_acceleration(t, zeta, psi, pre)
+    a_g = gravitational_acceleration(t, zeta, pre)
 
     # apply force with Euler
-    return zeta - pre.T_SPACING * grad_psi .* (psi_xx + psi_yy - psi_tt) 
+    return zeta + pre.T_SPACING * (a_em + a_g)
 end
 
 
@@ -154,9 +149,9 @@ end
     
 
 
-function evolve_variables(zeta, psi, pre::Precomputables)
+function evolve_variables(t, zeta, psi, pre::Precomputables)
 
-    w1 = compute_w1(zeta, psi, pre)
+    w1 = compute_w1(t, zeta, psi, pre)
     w2 = compute_w2(w1, pre)
     zeta_new = compute_w3(w2, psi[:,3], pre)
     psi_new = advect_psi(psi[:,3], zeta_new, pre)
@@ -184,8 +179,9 @@ function basic_simulation(Nt; pre=Precomputables())
         zeta_out[:,i] = zeta0[:]
     end
 
+    T_POINTS = LinRange(0, pre.T_SPACING*Nt, Nt)
     for i=4:Nt
-        zeta_i, psi_i = evolve_variables(zeta_out[:,i-1], psi_out[:,i-3:i-1], pre)
+        zeta_i, psi_i = evolve_variables(T_POINTS[i-1], zeta_out[:,i-1], psi_out[:,i-3:i-1], pre)
         zeta_out[:,i] = zeta_i[:]
         psi_out[:,i] = psi_i[:]
     end

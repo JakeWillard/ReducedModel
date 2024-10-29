@@ -12,15 +12,14 @@ struct Precomputables
     Dyy :: SparseMatrixCSC
 
     # Spacetime 
-    GAMMA :: Function
-    METRIC :: Function
+    ST :: Spacetime
 
     # Physical parameters
     ASPECT_RATIO :: Float64
     UPSTREAM_B :: Float64
     DIFFUSION_VECTOR :: Vector{Float64}
 
-    Precomputables(; GAMMA=(t, y) -> zeros(2, 2), METRIC=(y, t) -> diagm([-1.0, 1.0]), Y_NUMBER=200, Y_SIZE=1.0, CFL=0.2, N_TRACE=10, ASPECT_RATIO=0.2, UPSTREAM_B=10.0, HYPERVISCOSITY=1.0, HYPERVISCOSITY_EXPONENT=1) = begin
+    Precomputables(; ST=FlatCartesian(), Y_NUMBER=200, Y_SIZE=1.0, CFL=0.2, N_TRACE=10, ASPECT_RATIO=0.2, UPSTREAM_B=10.0, HYPERVISCOSITY=1.0, HYPERVISCOSITY_EXPONENT=1) = begin
         
         # compute grid spacing
         Y_SPACING = Y_SIZE / Y_NUMBER
@@ -39,6 +38,7 @@ struct Precomputables
         Dyy += spdiagm(-1 => ones(Y_NUMBER-1)) / Y_SPACING^2
         Dyy[1,1:3] = Dyy[2,1:3]
         Dyy[end,end-2:end] = Dyy[end-1,end-2:end]
+
 
         # compute diffusion vector
         ks = fftfreq(4*Y_NUMBER) * 4 * Y_NUMBER
