@@ -7,26 +7,26 @@ struct Spacetime
     DOMAIN_LB :: Vector{Float64}
     DOMAIN_UB :: Vector{Float64}
 
-    Spacetime(args; DOMAIN_LB=-[Inf, Inf, Inf, Inf], DOMAIN_UB=[Inf, Inf, Inf, Inf]) = begin
+    Spacetime(args...; DOMAIN_LB=-[Inf, Inf, Inf, Inf], DOMAIN_UB=[Inf, Inf, Inf, Inf]) = begin
 
         new(args..., DOMAIN_LB, DOMAIN_UB)
     end
 end
 
 
-function Spacetime(METRIC::Function, GAMMA::Function; kwargs...)
+function Spacetime(METRIC::Function, GAMMA::Function; DOMAIN_LB=-[Inf, Inf, Inf, Inf], DOMAIN_UB=[Inf, Inf, Inf, Inf])
 
     METRIC_INVERSE(x) = inv(METRIC(x))
     VOLUME_ELEMENT(x) = sqrt(det(METRIC(x)))
 
-    return Spacetime(METRIC, METRIC_INVERSE, VOLUME_ELEMENT, GAMMA, kwargs...)
+    return Spacetime(METRIC, METRIC_INVERSE, VOLUME_ELEMENT, GAMMA, DOMAIN_LB=DOMAIN_LB, DOMAIN_UB=DOMAIN_UB)
 end
 
 
 function FlatCartesian()
 
     METRIC(x) = diagm([-1.0, 1.0, 1.0, 1.0])
-    GAMMA(x) = zeros(4, 4, 4)
+    GAMMA(x) = zeros(2, 2)
 
     return Spacetime(METRIC, GAMMA)
 end

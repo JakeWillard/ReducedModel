@@ -71,7 +71,7 @@ function electromagnetic_acceleration(t, zeta, psi, pre::Precomputables)
     psi_tt = (psi[:,3] + psi[:,1] - 2*psi[:,2]) / pre.T_SPACING^2
 
     # y component of gradient of psi
-    grad_psi_y = [pre.ST.METRIC_INVERSE([t, 0.0, y, 0.0]) * [psi_t, psi_y] for y in pre.Y_POINTS]
+    grad_psi_y = [(pre.ST.METRIC_INVERSE([t, 0.0, pre.Y_POINTS[i], 0.0]) * [psi_t[i], 0.0, psi_y[i], 0.0])[3] for i=1:pre.Y_NUMBER]
 
     return grad_psi_y .* (psi_tt - psi_xx - psi_yy) ./ (cosh.(zeta).^2)
 end
@@ -80,7 +80,7 @@ end
 function gravitational_acceleration(t, zeta, pre::Precomputables)
 
     u = hcat(cosh.(zeta), sinh.(zeta))
-    a = [transpose(u[i,:]) * pre.ST.GAMMA([t, 0.0, pre.Y_POINTS[i], 0.0]) * u[i,:] / u[i,1]^2 for i=1:pre.Y_NUMBER]
+    a = [dot(u[i,:], pre.ST.GAMMA([t, 0.0, pre.Y_POINTS[i], 0.0])*u[i,:]) / u[i,1]^2 for i=1:pre.Y_NUMBER]
 
     return a
 end
@@ -190,24 +190,24 @@ function basic_simulation(Nt; pre=Precomputables())
 end
 
 
-function out_of_equilibrium(Nt; pre=Precomputables())
+# function out_of_equilibrium(Nt; pre=Precomputables())
 
-    psi0 = pre.UPSTREAM_B * pre.Y_POINTS .^5
-    zeta0 = zeros(pre.Y_NUMBER)
+#     psi0 = pre.UPSTREAM_B * pre.Y_POINTS .^5
+#     zeta0 = zeros(pre.Y_NUMBER)
 
-    psi_out = zeros(pre.Y_NUMBER, Nt)
-    zeta_out = zeros(pre.Y_NUMBER, Nt)
-    for i=1:3
-        psi_out[:,i] = psi0[:]
-        zeta_out[:,i] = zeta0[:]
-    end
+#     psi_out = zeros(pre.Y_NUMBER, Nt)
+#     zeta_out = zeros(pre.Y_NUMBER, Nt)
+#     for i=1:3
+#         psi_out[:,i] = psi0[:]
+#         zeta_out[:,i] = zeta0[:]
+#     end
 
-    for i=4:Nt
-        zeta_i, psi_i = evolve_variables(zeta_out[:,i-1], psi_out[:,i-3:i-1], pre)
-        zeta_out[:,i] = zeta_i[:]
-        psi_out[:,i] = psi_i[:]
-    end
+#     for i=4:Nt
+#         zeta_i, psi_i = evolve_variables(zeta_out[:,i-1], psi_out[:,i-3:i-1], pre)
+#         zeta_out[:,i] = zeta_i[:]
+#         psi_out[:,i] = psi_i[:]
+#     end
 
-    return Solution(zeta_out, psi_out, pre)
+#     return Solution(zeta_out, psi_out, pre)
 
-end
+# end

@@ -44,6 +44,21 @@ struct Precomputables
         ks = fftfreq(4*Y_NUMBER) * 4 * Y_NUMBER
         DIFFUSION_VECTOR = exp.(-ks.^(2*HYPERVISCOSITY_EXPONENT) * T_SPACING * HYPERVISCOSITY)
 
-        new(Y_NUMBER, Y_SPACING, Y_POINTS, T_SPACING, N_TRACE, Dy, Dyy, ASPECT_RATIO, UPSTREAM_B, DIFFUSION_VECTOR)
+        new(Y_NUMBER, Y_SPACING, Y_POINTS, T_SPACING, N_TRACE, Dy, Dyy, ST, ASPECT_RATIO, UPSTREAM_B, DIFFUSION_VECTOR)
     end
+end
+
+
+function SchwarzchildMidplane(r0, dt, dr, dtheta, dphi; savefile=nothing, GRID_DIMENSIONS=Int64[50, 5, 50, 5], PRECOMPILE_INVERSE=false, kwargs...)
+
+    original_spacetime = Spacetime(x -> zeros(2, 2)) do x
+        t, r, theta, phi = x
+        alpha2 = 1 - 1/r
+        return diagm([-alpha2, 1/alpha2, r^2, r^2*sin(theta)^2])
+    end
+
+    
+
+
+
 end
