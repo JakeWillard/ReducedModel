@@ -49,6 +49,14 @@ struct Precomputables
 end
 
 
+
+function Precomputables(savefile; kwargs...)
+
+    Precomputables(ST=Spacetime(savefile), kwargs...)
+end
+
+
+
 function SchwarzchildMidplane(r0, dt, dr, dtheta, dphi; savefile=nothing, GRID_DIMENSIONS=Int64[50, 5, 50, 5], PRECOMPILE_INVERSE=false, kwargs...)
 
     original_spacetime = Spacetime(x -> zeros(2, 2)) do x
