@@ -23,7 +23,7 @@ function Spacetime(METRIC::Function, GAMMA::Function; DOMAIN_LB=-[Inf, Inf, Inf,
 end
 
 
-function Spacetime(savefile; kwargs...)
+function Spacetime(savefile)
 
     # read in the data
     fid = h5open(savefile, "r")
@@ -36,21 +36,26 @@ function Spacetime(savefile; kwargs...)
     GAMMA_MATRIX = fid["GAMMA"][:,:,:,:]
     close(fid)
 
+    # ranges for interpolation
+    ys = LinRange(Y_POINTS[1], Y_POINTS[end], length(Y_POINTS))
+    ts = LinRange(T_POINTS[1], T_POINTS[end], length(T_POINTS))
+    ranges = (ys, ts)
+
     # make the interpolation functions 
-    Gtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,1])
-    Gty = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,2])
-    Gyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,2,2])
+    Gtt = cubic_spline_interpolation(ranges, G_MATRIX[:,:,1,1])
+    Gty = cubic_spline_interpolation(ranges, G_MATRIX[:,:,1,2])
+    Gyy = cubic_spline_interpolation(ranges, G_MATRIX[:,:,2,2])
     G_func(x) = [Gtt(x[3], x[1]) Gty(x[3], x[1]); Gty(x[3], x[1]) Gyy(x[3], x[1])]
     vol(x) = sqrt(det(G_func(x)))
 
-    Ginvtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,1])
-    Ginvty = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,2])
-    Ginvyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,2,2])
+    Ginvtt = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,1,1])
+    Ginvty = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,1,2])
+    Ginvyy = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,2,2])
     Ginv_func(x) = [Ginvtt(x[3], x[1]) Ginvty(x[3], x[1]); Ginvty(x[3], x[1]) Ginvyy(x[3], x[1])]
 
-    GAMtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,1])
-    GAMty = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,2])
-    GAMyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,2,2])
+    GAMtt = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,1,1])
+    GAMty = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,1,2])
+    GAMyy = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,2,2])
     GAM_func(x) = [GAMtt(x[3], x[1]) GAMty(x[3], x[1]); GAMty(x[3], x[1]) GAMyy(x[3], x[1])]
 
     return Spacetime(G_func, Ginv_func, vol, GAM_func, DOMAIN_LB=DOMAIN_LB, DOMAIN_UB=DOMAIN_UB)
@@ -94,62 +99,33 @@ function spacetime_to_grid(ST::Spacetime, Y_POINTS, T_POINTS; xval=0.0, yval=0.0
         fid["METRIC"] = G_MATRIX[:,:,:,:]
         fid["METRIC_INVERSE"] = Ginv_MATRIX[:,:,:,:]
         fid["GAMMA"] = GAMMA_MATRIX[:,:,:,:]
-        fid["Y_POINTS"] = Y_POINTS[:]
-        fid["T_POINTS"] = T_POINTS[:]
+        fid["Y_POINTS"] = Vector(Y_POINTS)[:]
+        fid["T_POINTS"] = Vector(T_POINTS)[:]
         fid["DOMAIN_LB"] = DOMAIN_LB[:]
         fid["DOMAIN_UB"] = DOMAIN_UB[:]
         close(fid)
     end
 
+    # ranges for interpolation (for if Y_POINTS and T_POINTS aren't LinRange objects)
+    ys = LinRange(Y_POINTS[1], Y_POINTS[end], length(Y_POINTS))
+    ts = LinRange(T_POINTS[1], T_POINTS[end], length(T_POINTS))
+    ranges = (ys, ts)
+
     # interpolation functions for components 
-    Gtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,1])
-    Gty = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,2])
-    Gyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,2,2])
+    Gtt = cubic_spline_interpolation(ranges, G_MATRIX[:,:,1,1])
+    Gty = cubic_spline_interpolation(ranges, G_MATRIX[:,:,1,2])
+    Gyy = cubic_spline_interpolation(ranges, G_MATRIX[:,:,2,2])
     G_func(x) = [Gtt(x[3], x[1]) Gty(x[3], x[1]); Gty(x[3], x[1]) Gyy(x[3], x[1])]
     vol(x) = sqrt(det(G_func(x)))
 
-    Ginvtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,1])
-    Ginvty = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,2])
-    Ginvyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,2,2])
+    Ginvtt = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,1,1])
+    Ginvty = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,1,2])
+    Ginvyy = cubic_spline_interpolation(ranges, Ginv_MATRIX[:,:,2,2])
     Ginv_func(x) = [Ginvtt(x[3], x[1]) Ginvty(x[3], x[1]); Ginvty(x[3], x[1]) Ginvyy(x[3], x[1])]
 
-    GAMtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,1])
-    GAMty = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,2])
-    GAMyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,2,2])
-    GAM_func(x) = [GAMtt(x[3], x[1]) GAMty(x[3], x[1]); GAMty(x[3], x[1]) GAMyy(x[3], x[1])]
-
-    return Spacetime(G_func, Ginv_func, vol, GAM_func, DOMAIN_LB=DOMAIN_LB, DOMAIN_UB=DOMAIN_UB)
-end
-
-
-function spacetime_from_file(savefile::String)
-
-    # read in the data
-    fid = h5open(savefile, "r")
-    Y_POINTS = fid["Y_POINTS"][:]
-    T_POINTS = fid["T_POINTS"][:]
-    DOMAIN_LB = fid["DOMAIN_LB"][:]
-    DOMAIN_UB = fid["DOMAIN_UB"][:]
-    G_MATRIX = fid["METRIC"][:,:,:,:]
-    Ginv_MATRIX = fid["METRIC_INVERSE"][:,:,:,:]
-    GAMMA_MATRIX = fid["GAMMA"][:,:,:,:]
-    close(fid)
-
-    # make the interpolation functions 
-    Gtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,1])
-    Gty = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,1,2])
-    Gyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), G_MATRIX[:,:,2,2])
-    G_func(x) = [Gtt(x[3], x[1]) Gty(x[3], x[1]); Gty(x[3], x[1]) Gyy(x[3], x[1])]
-    vol(x) = sqrt(det(G_func(x)))
-
-    Ginvtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,1])
-    Ginvty = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,1,2])
-    Ginvyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), Ginv_MATRIX[:,:,2,2])
-    Ginv_func(x) = [Ginvtt(x[3], x[1]) Ginvty(x[3], x[1]); Ginvty(x[3], x[1]) Ginvyy(x[3], x[1])]
-
-    GAMtt = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,1])
-    GAMty = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,1,2])
-    GAMyy = cubic_spline_interpolation((Y_POINTS, T_POINTS), GAMMA_MATRIX[:,:,2,2])
+    GAMtt = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,1,1])
+    GAMty = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,1,2])
+    GAMyy = cubic_spline_interpolation(ranges, GAMMA_MATRIX[:,:,2,2])
     GAM_func(x) = [GAMtt(x[3], x[1]) GAMty(x[3], x[1]); GAMty(x[3], x[1]) GAMyy(x[3], x[1])]
 
     return Spacetime(G_func, Ginv_func, vol, GAM_func, DOMAIN_LB=DOMAIN_LB, DOMAIN_UB=DOMAIN_UB)
