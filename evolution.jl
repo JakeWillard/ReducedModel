@@ -71,7 +71,7 @@ function electromagnetic_acceleration(t, zeta, psi, pre::Precomputables)
     psi_tt = (psi[:,3] + psi[:,1] - 2*psi[:,2]) / pre.T_SPACING^2
 
     # y component of gradient of psi
-    grad_psi_y = [(pre.ST.METRIC_INVERSE([t, 0.0, pre.Y_POINTS[i], 0.0]) * [psi_t[i], 0.0, psi_y[i], 0.0])[3] for i=1:pre.Y_NUMBER]
+    grad_psi_y = [(pre.ST.METRIC_INVERSE([t, 0.0, pre.Y_POINTS[i], 0.0]) * [psi_t[i], psi_y[i]])[2] for i=1:pre.Y_NUMBER]
 
     return grad_psi_y .* (psi_tt - psi_xx - psi_yy) ./ (cosh.(zeta).^2)
 end

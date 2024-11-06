@@ -56,6 +56,7 @@ function harmonic_coordinate_transformation(DOMAIN_LB::Vector{Float64}, DOMAIN_U
     # label the original domain bounds
     t0, x0, y0, z0 = DOMAIN_LB
     tf, xf, yf, zf = DOMAIN_UB
+    ht, hx, hy, hz = DOMAIN_UB - DOMAIN_LB
 
     # construct a boundary operator which is identity on the boundary and sets to zero elsewhere
     Bvals = zeros(Nt, Nx, Ny, Nz)
@@ -175,10 +176,10 @@ function harmonic_coordinate_transformation(DOMAIN_LB::Vector{Float64}, DOMAIN_U
 
         # compute gradient of the metric components
         dg = zeros(4, 4, 4)
-        dg[1,:,:] = der(t -> METRIC_HARMONIC([t; r[2:end]]), x[1])
+        dg[1,:,:] = der(t -> METRIC_HARMONIC([t; r[2:end]]), r[1])
         dg[2,:,:] = der(x -> METRIC_HARMONIC([r[1]; x; r[3:4]]), r[2])
         dg[3,:,:] = der(y -> METRIC_HARMONIC([r[1:2]; y; r[4]]), r[3])
-        dg[4,:,:] = der(x -> METRIC_HARMONIC([r[1:3]; z]), r[4])
+        dg[4,:,:] = der(z -> METRIC_HARMONIC([r[1:3]; z]), r[4])
 
         # compute christoffel symbols of the first kind 
         G1 = zeros(4, 4, 4)

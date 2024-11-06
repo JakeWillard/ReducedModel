@@ -17,7 +17,7 @@ end
 function Spacetime(METRIC::Function, GAMMA::Function; DOMAIN_LB=-[Inf, Inf, Inf, Inf], DOMAIN_UB=[Inf, Inf, Inf, Inf])
 
     METRIC_INVERSE(x) = inv(METRIC(x))
-    VOLUME_ELEMENT(x) = sqrt(det(METRIC(x)))
+    VOLUME_ELEMENT(x) = sqrt(-det(METRIC(x)))
 
     return Spacetime(METRIC, METRIC_INVERSE, VOLUME_ELEMENT, GAMMA, DOMAIN_LB=DOMAIN_LB, DOMAIN_UB=DOMAIN_UB)
 end
@@ -87,7 +87,7 @@ function spacetime_to_grid(ST::Spacetime, Y_POINTS, T_POINTS; xval=0.0, yval=0.0
             position = [T_POINTS[j], xval, Y_POINTS[i], yval]
             g = ST.METRIC(position)
             ginv = inv(g)
-            GAMMA_MATRIX[i,j,:,:] = ST.GAMMA(position)
+            GAMMA_MATRIX[i,j,:,:] = ST.GAMMA(position)[3, [1,3],[1,3]]
             G_MATRIX[i,j,:,:] = g[[1,3], [1,3]]
             Ginv_MATRIX[i,j,:,:] = ginv[[1,3], [1,3]]
         end

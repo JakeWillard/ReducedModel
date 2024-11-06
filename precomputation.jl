@@ -19,12 +19,13 @@ struct Precomputables
     UPSTREAM_B :: Float64
     DIFFUSION_VECTOR :: Vector{Float64}
 
-    Precomputables(; ST=FlatCartesian(), Y_NUMBER=200, Y_SIZE=1.0, CFL=0.2, N_TRACE=10, ASPECT_RATIO=0.2, UPSTREAM_B=10.0, HYPERVISCOSITY=1.0, HYPERVISCOSITY_EXPONENT=1) = begin
+    Precomputables(; ST=FlatCartesian(), Y_NUMBER=200, CFL=0.2, N_TRACE=10, ASPECT_RATIO=0.2, UPSTREAM_B=10.0, HYPERVISCOSITY=1.0, HYPERVISCOSITY_EXPONENT=1) = begin
         
         # compute grid spacing
+        Y_SIZE = (ST.DOMAIN_UB - ST.DOMAIN_LB)
         Y_SPACING = Y_SIZE / Y_NUMBER
         T_SPACING = CFL * Y_SPACING
-        Y_POINTS = LinRange(0, Y_SIZE, Y_NUMBER)
+        Y_POINTS = LinRange(ST.DOMAIN_LB[2], ST.DOMAIN_UB[2], Y_NUMBER)
 
         # compute first derivative matrix
         Dy = spdiagm(1 => ones(Y_NUMBER-1)) / (2 * Y_SPACING)
@@ -52,21 +53,28 @@ end
 
 function Precomputables(savefile; kwargs...)
 
-    Precomputables(ST=Spacetime(savefile), kwargs...)
+    Precomputables(ST=Spacetime(savefile); kwargs...)
 end
 
 
 
 function SchwarzchildMidplane(r0, dt, dr, dtheta, dphi; savefile=nothing, GRID_DIMENSIONS=Int64[50, 5, 50, 5], PRECOMPILE_INVERSE=false, kwargs...)
 
-    original_spacetime = Spacetime(x -> zeros(2, 2)) do x
+
+    original_metric(x) = begin
         t, r, theta, phi = x
         alpha2 = 1 - 1/r
         return diagm([-alpha2, 1/alpha2, r^2, r^2*sin(theta)^2])
     end
+    original_spacetime = Spacetime(original_metric, x -> zeros(2, 2))
 
-    
+    DOMAIN_LB = [0.0, r0, pi/2.0, 0.0]
+    DOMAIN_UB = [dt, r0 + dr, pi/2.0+dtheta, dphi]
 
+    o_to_h, h_to_o, harmonic_spacetime = harmonic_coordinate_transformation(DOMAIN_LB, DOMAIN_UB, original_spacetime; GRID_DIMENSIONS=GRID_DIMENSIONS, PRECOMPILE_INVERSE=PRECOMPILE_INVERSE)
 
+    ST = spacetime_to_grid(harmonic_spacetime, LinRange(0.0, dtheta, 100), LinRange(0.0, dt, 5); savefile=savefile)
+
+    return Precomputables(ST=ST, kwargs...)
 
 end
