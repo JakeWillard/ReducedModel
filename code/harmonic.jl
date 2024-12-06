@@ -145,6 +145,8 @@ function harmonic_coordinate_transformation(DOMAIN_LB::Vector{Float64}, DOMAIN_U
     # construct interpolation function for the coordinate transformation itself
     ORIGINAL_TO_HARMONIC(x) = [Tf(x...), Xf(x...), Yf(x...), Zf(x...)]
 
+    return ORIGINAL_TO_HARMONIC
+
     # define const function for the inverse problem 
     cost_function = OptimizationFunction(AutoForwardDiff()) do x_original, x_harmonic
         norm(ORIGINAL_TO_HARMONIC(x_original) - x_harmonic)
